@@ -1,0 +1,98 @@
+monero-python is a Python wrapper around the Monero RPC API.
+It allows receiving and sending Monero using a Python API.
+Licensed as BSD.
+
+Requirements:
+  - Monero
+  - Python 2.x
+  - Redis
+
+The API consists of a single class, Monero, with a number of methods.
+Calling raw module functions is undocumented and subject to change.
+
+ * Initialization:
+
+  monero=Monero(daemon_host,daemon_port,wallet_host,wallet_port,redis_host,redis_port)
+
+ * Checking the current balance:
+
+  full_balance,unlocked_balance = monero.GetWalletBalance()
+
+  The full balance is the total amount (in atomic units, of which a
+  monero contains 1e12, or 1000000000000) in the wallet. The unlocked
+  balance is the portion of it that may be used now. Part of the
+  balance may be locked if it was just mined or received (including
+  as part of change to an outgoing transaction). Those locked funds
+  will become unlocked as new blocks are found by the network.
+
+ * Create a new payment ID for a recipient:
+
+  payment_id=monero.GetPaymentID(recipient)
+
+  recipient is a string representing a user, destination, etc. The
+  semantics of it are left to the API user. Numbers can be used if
+  they're passed as strings. CheckForDeposits and other such functions
+  will return that recipient when the associated payment ID is found
+  in a transaction.
+  Payment IDs are deterministic, so asking for a payment ID for a
+  given recipient will always yield the same payment ID.
+
+ * Get the recipient corresponding to a payment ID:
+
+  recipient=monero.GetRecipient(payment_id)
+
+  Returns the recipient associated with the given payment ID, or None
+  if there is none. If there is one, it is the string that was passed
+  to a previous call to GetPaymentID.
+
+ * Check for new deposits:
+
+  payments=monero.CheckForDeposits()
+
+  payments will be either None, in case of an error, or an array
+  containing payment information. This array may be empty if no new
+  transactions were found. Deposits are checked for all payment IDs
+  that were created with GetPaymentID.
+  Each member of the array has the following fields:
+    tx_hash (string): the transaction hash for that transaction
+    amount (long): the amount of atomic units received
+    confirmed (boolean): whether that transaction has enough confirmations
+    confirmations (int): number of blocks received on top of the block with this transaction
+    payment_id (string): the payment id associated with that transaction, None if none
+    recipient (string): the recipient corresponding to that payment id, or None
+
+ * Get full transaction history:
+
+  payments=monero.GetDepositHistory(paymentid=[])
+
+  Returns the same data format as CheckForDeposits, but for all time,
+  rather that just new ones. This retrieves all deposits matching the
+  given filters.
+  A payment ID of None will return history for all the payment IDs created
+  by GetPaymentID. [] will return all history, regardless of payment ID.
+  A payment ID string will return history for this particular payment ID.
+  A list of payment IDs will return history for all these payment IDs.
+  Since a list is returned, it is easy to perform extra steps with the list,
+  such as accumulating amounts, eg:
+    total = sum(tx['amount'] for tx in payments)
+
+
+ * Send monero to an address:
+
+  tx_hash=monero.Send(address,amount,paymentid=None,mixin=None)
+
+  Sends some monero to the address. The amount is in atomic units.
+  The payment ID and mixin are optional. It is recommended to use
+  a mixin equal to 3 or higher. The network will take a fee for this
+  transaction, so you will be unable to send the full balance. At
+  the time of writing, the network fee is 0.01 monero per kilobyte.
+
+ * Send monero to several addresses at once:
+
+  tx_hash=monero.SendMany(address,amount,paymentid=None,mixin=None)
+
+  Sends some monero to a number of addresses. The recipient parameter
+  is a dict containing the amounts (in atomic units) as a value of
+  the address in the key (ie, {'4....': 823900000000}).
+  Other comments from Send also apply.
+
