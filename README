@@ -12,7 +12,13 @@ Calling raw module functions is undocumented and subject to change.
 
  * Initialization:
 
-  monero=Monero(daemon_host,daemon_port,wallet_host,wallet_port,redis_host,redis_port)
+  monero=Monero(daemon_host,daemon_port,wallet_host,wallet_port,redis_host,redis_port,site_salt)
+
+  Site salt is a string that's specific to your particular use.
+  It should be random but constant. Its intent is to cause the
+  same recipient identifier to map to different payment IDs for
+  two different users of monero-python. It is recommended to
+  hard code some random string in the call.
 
  * Checking the current balance:
 
@@ -27,15 +33,16 @@ Calling raw module functions is undocumented and subject to change.
 
  * Create a new payment ID for a recipient:
 
-  payment_id=monero.GetPaymentID(recipient)
+  payment_id=monero.GetPaymentID(recipient,deterministic=True)
 
   recipient is a string representing a user, destination, etc. The
   semantics of it are left to the API user. Numbers can be used if
   they're passed as strings. CheckForDeposits and other such functions
   will return that recipient when the associated payment ID is found
   in a transaction.
-  Payment IDs are deterministic, so asking for a payment ID for a
-  given recipient will always yield the same payment ID.
+  Payment IDs can be deterministic (so asking for a payment ID for a
+  given recipient will always yield the same payment ID) or not (so
+  multiple calls to GetPaymentID will yield different Payment IDs).
 
  * Get the recipient corresponding to a payment ID:
 
@@ -43,7 +50,7 @@ Calling raw module functions is undocumented and subject to change.
 
   Returns the recipient associated with the given payment ID, or None
   if there is none. If there is one, it is the string that was passed
-  to a previous call to GetPaymentID.
+  to a previous call to GetPaymentID which returned this payment ID.
 
  * Check for new deposits:
 

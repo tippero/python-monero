@@ -33,18 +33,19 @@ import redisdb
 import payment
 
 class Monero:
-  def __init__(self,daemon_host,daemon_port,wallet_host,wallet_port,redis_host,redis_port):
+  def __init__(self,daemon_host,daemon_port,wallet_host,wallet_port,redis_host,redis_port,site_salt):
     redisdb.connect_to_redis(redis_host,redis_port)
     self.daemon_host=daemon_host
     self.daemon_port=daemon_port
     self.wallet_host=wallet_host
     self.wallet_port=wallet_port
+    self.site_salt=site_salt
 
   def GetWalletBalance(self):
     return utils.RetrieveWalletBalance(self.wallet_host,self.wallet_port)
 
-  def GetPaymentID(self,recipient):
-    return utils.GetPaymentIDFromUserID(recipient)
+  def GetPaymentID(self,recipient,deterministic=True):
+    return utils.GetPaymentIDFromUserID(recipient,deterministic,self.site_salt)
 
   def GetRecipient(self,payment_id):
     return utils.GetUserIDFromPaymentID(payment_id)

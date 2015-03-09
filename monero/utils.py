@@ -34,6 +34,7 @@ import json
 import httplib
 import time
 import string
+from Crypto.Random.random import getrandbits
 from decimal import *
 from log import log_error, log_warn, log_info, log_log
 from redisdb import *
@@ -45,11 +46,15 @@ cached_wallet_balance=None
 cached_wallet_unlocked_balance=None
 cached_wallet_balance_timestamp=None
 
-def GetPaymentIDFromUserID(user_id):
-  salt="nveuweaiirv-"
-  p = hashlib.sha256(salt+user_id).hexdigest()
+def GetPaymentIDFromUserID(user_id,deterministic,site_salt=''):
+  salt="nveuweaiirv-"+site_salt+'-'
+  if deterministic:
+    s = salt + user_id
+  else:
+    s = salt + str(getrandbits(128)) + '-' + user_id
+  p = hashlib.sha256(s).hexdigest()
   try:
-    redis_hset("paymentid",p,link.identity())
+    redis_hset("paymentid",p,user_id)
   except Exception,e:
     log_error('GetPaymentIDFromUserID: failed to set payment ID for %s to redis: %s' % (user_id,str(e)))
   return p
